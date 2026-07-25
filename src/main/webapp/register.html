@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Account | EventNode</title>
+
+    <style>
+        :root { 
+            --primary: #4F46E5; 
+            --bg-page: #F1F5F9; 
+            --card-bg: #FFFFFF; 
+            --text-main: #0F172A; 
+            --text-muted: #475569; 
+            --border: #CBD5E1; 
+            --error-bg: #FEF2F2;
+            --error-border: #FECACA;
+            --error-text: #991B1B;
+            --error-accent: #EF4444;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+        }
+        
+        body { 
+            background: radial-gradient(circle at 50% -20%, #E0E7FF 0%, #F1F5F9 100%); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+
+        
+
+        .toast {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-150%);
+            opacity: 0;
+            background-color: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-left: 4px solid var(--error-accent);
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 1000;
+            transition: all 0.5s cubic-bezier(0.68,-0.55,0.265,1.55);
+        }
+
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+
+        .toast-icon { 
+            font-size: 20px; 
+        }
+
+        .toast-content h4 { 
+            color: var(--error-text); 
+            font-size: 14px; 
+            margin-bottom: 4px; 
+        }
+
+        .toast-content p { 
+            color: #B91C1C; 
+            font-size: 13px; 
+        }
+
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--error-text);
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.6;
+            padding-left: 12px;
+        }
+
+        .toast-close:hover { 
+            opacity: 1; 
+        }
+
+
+
+       
+
+        .auth-box { 
+            background: var(--card-bg); 
+            padding: 48px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border); 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 420px;
+            transition: transform 0.3s ease; 
+        }
+
+
+        .auth-box:hover { 
+            transform: translateY(-5px); 
+        }
+
+
+        .brand-header { 
+            text-align: center; 
+            margin-bottom: 16px; 
+        }
+
+        .brand-header h2 { 
+            color: var(--primary); 
+            font-size: 32px; 
+            letter-spacing: -1px; 
+            margin-bottom: 4px; 
+        }
+
+        .brand-header p { 
+            color: var(--text-muted); 
+            font-size: 14px; 
+        }
+
+
+        .form-title { 
+            color: var(--text-main); 
+            font-size: 18px; 
+            text-align: center; 
+            margin-bottom: 24px; 
+            font-weight: 600; 
+        }
+
+
+        .input-group { 
+            margin-bottom: 20px; 
+        }
+
+
+        .input-group label { 
+            display: block; 
+            font-size: 12px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            color: var(--text-muted); 
+            margin-bottom: 8px; 
+        }
+
+
+        .input-group input { 
+            width: 100%; 
+            padding: 14px; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 16px; 
+            background: #F8FAFC; 
+            transition: all 0.2s; 
+        }
+
+
+        .input-group input:focus { 
+            border-color: var(--primary); 
+            background: white; 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(79,70,229,0.1); 
+        }
+
+
+        .submit-btn { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+
+
+        .submit-btn:hover { 
+            background-color: #4338CA; 
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3); 
+        }
+
+
+        .footer-text { 
+            text-align:center; 
+            margin-top:20px; 
+            font-size:14px; 
+            color:var(--text-muted); 
+        }
+
+
+        .footer-text a { 
+            color:var(--primary); 
+            font-weight:600; 
+            text-decoration:none; 
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- Toast UI Elements -->
+
+    <div id="error-toast" class="toast">
+
+        <div class="toast-icon">⚠️</div>
+
+        <div class="toast-content">
+
+            <h4 id="toast-title">Registration Failed</h4>
+
+            <p id="toast-message">
+                That email address is already registered.
+            </p>
+
+        </div>
+
+        <button class="toast-close" onclick="closeToast()">×</button>
+
+    </div>
+
+
+
+    <div class="auth-box">
+
+        <div class="brand-header">
+
+            <h2>EventNode</h2>
+
+            <p>Secure Access Portal</p>
+
+        </div>
+
+
+        <div class="form-title">
+            Create Account
+        </div>
+
+
+
+        <form id="registerForm" action="RegisterServlet" method="POST">
+
+
+            <div class="input-group">
+
+                <label>Full Name</label>
+
+                <input type="text" name="full_name" required>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label>Email</label>
+
+                <input type="email" name="email" required>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label>Password</label>
+
+                <input type="password" name="password" required>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label>Confirm Password</label>
+
+                <input type="password" name="confirm_password" required>
+
+            </div>
+
+
+
+            <button type="submit" class="submit-btn">
+                Register
+            </button>
+
+
+        </form>
+
+
+
+        <p class="footer-text">
+
+            Already have an account? 
+
+            <a href="index.html">Sign in</a>
+
+        </p>
+
+
+    </div>
+
+
+
+
+<script>
+
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const error = urlParams.get('error');
+
+    const toast = document.getElementById('error-toast');
+
+
+
+    if(error === "emailTaken") {
+
+
+        document.getElementById("toast-title").textContent = 
+            "Registration Failed";
+
+
+        document.getElementById("toast-message").textContent =
+            "That email address is already registered.";
+
+
+        toast.classList.add("show");
+
+
+        setTimeout(() => {
+            closeToast();
+        },5000);
+
+
+    }
+
+
+
+    if(error === "passwordMismatch") {
+
+
+        document.getElementById("toast-title").textContent =
+            "Password Error";
+
+
+        document.getElementById("toast-message").textContent =
+            "The passwords entered do not match.";
+
+
+        toast.classList.add("show");
+
+
+        setTimeout(() => {
+            closeToast();
+        },5000);
+
+
+    }
+
+
+
+
+    function closeToast(){
+
+        document.getElementById("error-toast")
+        .classList.remove("show");
+
+    }
+
+
+
+
+
+    // --- PASSWORD MATCH CHECK BEFORE SUBMIT ---
+
+    document.getElementById("registerForm")
+    .addEventListener("submit", function(event){
+
+
+        const password = 
+        document.querySelector('input[name="password"]').value;
+
+
+        const confirmPassword = 
+        document.querySelector('input[name="confirm_password"]').value;
+
+
+
+        if(password !== confirmPassword){
+
+
+            event.preventDefault();
+
+
+
+            document.getElementById("toast-title").textContent =
+                "Password Error";
+
+
+            document.getElementById("toast-message").textContent =
+                "The passwords entered do not match.";
+
+
+
+            toast.classList.add("show");
+
+
+
+            setTimeout(() => {
+
+                closeToast();
+
+            },5000);
+
+
+        }
+
+
+    });
+
+
+
+</script>
+
+
+</body>
+</html>
