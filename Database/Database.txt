@@ -1,0 +1,118 @@
+CREATE TABLE Users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Events (
+    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    event_date DATETIME NOT NULL,
+    location VARCHAR(200) NOT NULL,
+    capacity INT NOT NULL,
+    event_code VARCHAR(20) UNIQUE NOT NULL, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE Event_Members (
+    member_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    event_role ENUM('Admin', 'Organizer', 'Participant') NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE,
+    UNIQUE(user_id, event_id) 
+);
+
+CREATE TABLE Tickets (
+    ticket_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    ticket_tier VARCHAR(50) DEFAULT 'General',
+    secure_token VARCHAR(100) UNIQUE NOT NULL, 
+    dietary_restrictions VARCHAR(255) DEFAULT 'None', 
+    accessibility_needs VARCHAR(255) DEFAULT 'None',  
+    check_in_status ENUM('Registered', 'Attended') DEFAULT 'Registered', 
+    purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Agenda_Items (
+    agenda_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Announcements (
+    announcement_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    posted_by INT NOT NULL, 
+    message TEXT NOT NULL,
+    posted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (posted_by) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Feedback (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5), 
+    comments TEXT,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE,
+    UNIQUE(user_id, event_id) 
+);
+
+CREATE TABLE Event_Ticket_Tiers (
+    tier_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    tier_name VARCHAR(50) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    description VARCHAR(255),
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE,
+    UNIQUE(event_id, tier_name) 
+);
+
+CREATE TABLE Event_Announcements (
+    announcement_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE
+);
+
+ALTER TABLE Event_Ticket_Tiers 
+ADD COLUMN total_capacity INT NOT NULL DEFAULT 100,
+ADD COLUMN max_per_user INT NOT NULL DEFAULT 1;
+
+CREATE TABLE Event_Preference_Fields (
+    field_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    field_label VARCHAR(100) NOT NULL,
+    field_type ENUM('text', 'dropdown', 'checkbox') NOT NULL,
+    dropdown_options TEXT, 
+    FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE Ticket_Preference_Answers (
+    answer_id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    field_id INT NOT NULL,
+    answer_text TEXT NOT NULL,
+    FOREIGN KEY (ticket_id) REFERENCES Tickets(ticket_id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES Event_Preference_Fields(field_id) ON DELETE CASCADE,
+    UNIQUE(ticket_id, field_id) 
+);
+
+ALTER TABLE Events ADD COLUMN preferences_locked BOOLEAN DEFAULT FALSE;
