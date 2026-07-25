@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guest Dashboard | EventNode</title>
+    <style>
+        :root {
+            --brand-primary: #4F46E5; 
+            --brand-hover: #4338CA;
+            --sidebar-bg: #0F172A;
+            --sidebar-hover: #1E293B;
+            --sidebar-text: #94A3B8;
+            --bg-canvas: #F8FAFC; 
+            --surface: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border-light: #E2E8F0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-canvas); color: var(--text-main); overflow: hidden; }
+
+        .sidebar { width: 280px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid #1E293B; z-index: 20; height: 100vh; }
+        .sidebar-header { height: 76px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid #1E293B; }
+        .sidebar-header h2 { color: #FFFFFF; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+        .badge-guest { background: #64748B; color: #FFFFFF; font-size: 10px; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; font-weight: 700; margin-left: 8px; }
+
+        .nav-menu { padding: 24px 16px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+        .nav-item { padding: 14px 16px; color: var(--sidebar-text); background: none; border: none; text-align: left; font-size: 15px; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; }
+        .nav-item:hover { background-color: var(--sidebar-hover); color: #E2E8F0; }
+        .nav-item.active { background-color: var(--brand-primary); color: #FFFFFF; font-weight: 600; }
+        .nav-exit { padding: 14px 16px; color: #F87171; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px; border: 1px solid #7F1D1D; text-align: center; margin: 24px 16px; display: block; }
+        .nav-exit:hover { background: #7F1D1D; color: #FFFFFF; }
+
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .top-header { height: 76px; background-color: var(--surface); display: flex; align-items: center; padding: 30px 48px; border-bottom: 1px solid var(--border-light); position: sticky; top: 0; z-index: 10; }
+        .header-title { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; margin: 0; }
+        .content { padding: 40px 48px; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+
+        .tab-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border-light); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow: hidden; }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border-light); }
+        .card-header h3 { font-size: 16px; font-weight: 600; }
+        .card-body { padding: 24px; }
+
+        .ticket-card { grid-column: span 2; background: linear-gradient(135deg, var(--brand-primary), #312E81); color: white; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; padding: 32px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .ticket-tier { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 16px; }
+        .qr-placeholder { background: white; width: 120px; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column; color: var(--text-muted); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: 14px; }
+        .btn-primary { background: var(--brand-primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary:hover { background: var(--brand-hover); }
+        
+        .mb-3 { margin-bottom: 16px; }
+    
+        .event-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .event-info-card {
+            background: linear-gradient(135deg, #F8FAFC, #FFFFFF);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-info-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--brand-primary);
+        }
+
+        .event-info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(79,70,229,0.12);
+        }
+
+
+        .event-icon {
+            width: 45px;
+            height: 45px;
+            background: #E0E7FF;
+            color: var(--brand-primary);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+        }
+
+
+        .event-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+
+        .event-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+
+        .event-sub {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>EventNode <span class="badge-guest">Guest</span></h2>
+        </div>
+        <nav class="nav-menu">
+            <button class="nav-item active" onclick="switchTab('tab-dashboard')">Dashboard</button>
+            <button class="nav-item" onclick="switchTab('tab-tickets')">Buy Tickets</button>
+            <button class="nav-item" onclick="switchTab('tab-agenda')">Event Agenda</button>
+            <button class="nav-item" onclick="switchTab('tab-preferences')">My Preferences</button>
+        </nav>
+        <a href="dashboard.html" class="nav-exit">Return to Dashboard</a>
+    </aside>
+
+    <main class="main-wrapper">
+        <header class="top-header">
+            <h1 class="header-title" id="page-title">Dashboard</h1>
+        </header>
+
+        <div class="content">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-section active">
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    
+                    <div class="card" style="margin-bottom: 0;">
+    
+                        <div class="card-header">
+                            <h3>Event Details</h3>
+                        </div>
+
+
+                        <div class="card-body">
+
+                            <div class="event-info-grid">
+
+
+                                <!-- DATE -->
+                                <div class="event-info-card">
+
+                                    <div class="event-icon">
+                                        📅
+                                    </div>
+
+                                    <div>
+                                        <div class="event-label">
+                                            Event Date
+                                        </div>
+
+                                        <div class="event-value" id="event-date">
+                                            Loading Date...
+                                        </div>
+
+                                        <div class="event-sub" id="event-time">
+                                            Loading Time...
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+
+                                <!-- LOCATION -->
+                                <div class="event-info-card">
+
+                                    <div class="event-icon">
+                                        📍
+                                    </div>
+
+                                    <div>
+
+                                        <div class="event-label">
+                                            Location
+                                        </div>
+
+                                        <div class="event-value">
+                                            EverNeo Reception Hall
+                                        </div>
+
+                                        <div class="event-sub" id="event-location">
+                                            Loading Location...
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>Announcements Board</h3>
+                            <span style="font-size: 12px; font-weight: bold; color: var(--brand-primary); background: #E0E7FF; padding: 4px 10px; border-radius: 99px;">Live Updates</span>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div id="announcement-feed-body" style="max-height: 400px; overflow-y: auto;">
+                                <div style="padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px;">Waiting for live updates...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        
+            <div id="tab-tickets" class="tab-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Available Ticket Tiers</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Select a ticket tier to complete your event registration.</p>
+                        
+                        <div id="ticket-tiers-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+                            <div style="text-align: center; color: var(--text-muted); font-size: 14px; grid-column: 1 / -1; padding: 40px;">
+                                Loading available tickets...
+                            </div>
+                        </div>
+                        
+                        <hr style="margin: 48px 0; border: 0; border-top: 1px solid var(--border-light);">
+                        <h3 style="margin-bottom: 24px; font-size: 20px; font-weight: 700;">My Purchased Tickets</h3>
+                        <div id="myTicketsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                            <p style="color: var(--text-muted); font-size: 14px;">Loading your tickets...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+       
+            <div id="tab-agenda" class="tab-section">
+                <div class="card">
+                    <div class="card-header"><h3>Official Timeline</h3></div>
+                    <div class="card-body" id="agenda-feed-body" style="padding: 0;">
+                        <div style="text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px;">Loading agenda...</div>
+                    </div>
+                </div>
+            </div>
+
+      
+            <div id="tab-preferences" class="tab-section">
+                <div class="card">
+                    <div class="card-header"><h3>Update Logistics & Preferences</h3></div>
+                    <div class="card-body">
+                        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Please complete the specialized event preferences defined by our organizers.</p>
+                        
+                        <form id="preferences-form" action="SaveUserPreferencesAPI" method="POST">
+                            <!-- HIDDEN IDs REMOVED -->
+                            
+                            <div id="dynamic-preference-fields">
+                                <p style="color: var(--text-muted); font-size: 14px;">Loading questionnaire settings...</p>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary" style="margin-top: 16px;">Save Preferences</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+     
+        <div id="checkout-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 100; align-items: center; justify-content: center;">
+            <div class="card" style="width: 100%; max-width: 500px; animation: fadeIn 0.2s ease-in-out;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Complete Registration</h3>
+                    <button onclick="closeCheckout()" style="background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 24px; color: var(--text-muted); font-size: 14px;">You are purchasing a <strong id="modal-tier-name" style="color: var(--text-main);">...</strong> ticket. Please confirm your payment details below.</p>
+                    
+                    <form id="checkout-form" action="PurchaseTicketAPI" method="POST" autocomplete="off">
+                        <!-- HIDDEN IDs REMOVED -->
+                        <input type="hidden" id="checkout-tier" name="tierName">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Name on Card</label>
+                            <input type="text" class="form-input" name="demoName" placeholder="John Doe" autocomplete="new-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Card Number</label>
+                            <input type="text" class="form-input" name="demoNum" placeholder="0000 0000 0000 0000" maxlength="16" autocomplete="new-password" required>
+                        </div>
+                        <div style="display: flex; gap: 16px;">
+                            <div class="mb-3" style="flex: 1;">
+                                <label class="form-label">Expiry Date</label>
+                                <input type="text" class="form-input" name="demoExp" placeholder="MM/YY" autocomplete="new-password" required>
+                            </div>
+                            <div class="mb-3" style="flex: 1;">
+                                <label class="form-label">CVC</label>
+                                <input type="text" class="form-input" name="demoCvc" placeholder="123" maxlength="3" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">Confirm & Purchase</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  
+    <script>
+        function switchTab(tabId) {
+            const allTabs = document.querySelectorAll('.tab-section');
+            allTabs.forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+
+            const allNavItems = document.querySelectorAll('.nav-item');
+            allNavItems.forEach(item => item.classList.remove('active'));
+            
+            if (event && event.target && event.target.tagName === 'BUTTON') {
+                event.target.classList.add('active');
+                document.getElementById('page-title').innerText = event.target.innerText;
+            }
+
+            const shortName = tabId.replace('tab-', '');
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('tab', shortName);
+            const newUrl = window.location.pathname + "?" + urlParams.toString();
+            window.history.replaceState(null, "", newUrl);
+
+            // --- INSTANT DATA REFRESH ON TAB SWITCH ---
+            if (tabId === 'tab-dashboard') {
+                fetch('GetEventDetailsAPI')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.date) document.getElementById('event-date').innerText = data.date;
+                        if (data.time) document.getElementById('event-time').innerText = data.time;
+                        if (data.location) document.getElementById('event-location').innerText = data.location;
+                    }).catch(err => console.log("Error loading event details..."));
+                
+                fetch('GetAnnouncementsAPI?role=guest')
+                    .then(response => response.text())
+                    .then(htmlFeed => {
+                        if(htmlFeed && htmlFeed.trim() !== "") {
+                            document.getElementById('announcement-feed-body').innerHTML = htmlFeed;
+                        }
+                    }).catch(err => console.log("Announcements loading error..."));
+
+            } else if (tabId === 'tab-tickets') {
+                fetch('GetMyTicketsAPI')
+                    .then(response => response.text())
+                    .then(htmlData => {
+                        if (htmlData && htmlData.trim() !== "") {
+                            document.getElementById('myTicketsContainer').innerHTML = htmlData;
+                        }
+                    });
+                
+                fetch('GetTicketUserAPI')
+                    .then(response => response.text())
+                    .then(htmlData => {
+                        if (htmlData && htmlData.trim() !== "") {
+                            document.getElementById('ticket-tiers-container').innerHTML = htmlData;
+                        }
+                    }).catch(err => console.log("Tickets loading error..."));
+
+            } else if (tabId === 'tab-agenda') {
+                fetch('GetAgendaAPI?role=guest')
+                    .then(response => response.text())
+                    .then(htmlFeed => {
+                        if (htmlFeed) {
+                            document.getElementById('agenda-feed-body').innerHTML = htmlFeed;
+                        }
+                    }).catch(err => console.log("Timeline error..."));
+
+            } else if (tabId === 'tab-preferences') {
+                fetch('GetDynamicPreferencesAPI')
+                    .then(response => response.text())
+                    .then(htmlForm => {
+                        if (htmlForm && htmlForm.trim() !== "") {
+                            document.getElementById('dynamic-preference-fields').innerHTML = htmlForm;
+                        }
+                    }).catch(err => console.log("Preferences loading error..."));
+            }
+        }
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetTab = urlParams.get('tab');
+            const message = urlParams.get('message');
+            const error = urlParams.get('error');
+
+            if (targetTab) {
+                const targetButton = document.querySelector(`button[onclick="switchTab('tab-${targetTab}')"]`);
+                if(targetButton) targetButton.click();
+            }
+
+            setTimeout(() => {
+                if (message === 'Saved') {
+                    let detailedMessage = sessionStorage.getItem('detailedSaveMessage');
+                    if (detailedMessage) {
+                        alert(detailedMessage);
+                        sessionStorage.removeItem('detailedSaveMessage'); 
+                    } else {
+                        alert("Your custom logistics preferences were recorded.");
+                    }
+                } else if (message === 'TicketPurchased') {
+                    alert("Ticket purchased successfully! Your payment details were validated securely.");
+                } else if (error === 'InvalidPayment') {
+                    alert("Payment validation failed. Please check your card details.");
+                } else if (error === 'PurchaseFailed') {
+                    alert("Purchase blocked: This ticket tier is either sold out, or you have reached your maximum ticket limit.");
+                } else if (error === 'SystemError') {
+                    alert("A system error occurred. Please try again.");
+                }
+                
+                if (message || error) {
+                 
+                    urlParams.delete('message');
+                    urlParams.delete('error');
+                    const cleanUrl = window.location.pathname + "?" + urlParams.toString();
+                    window.history.replaceState(null, "", cleanUrl);
+                }
+            }, 100);
+        };
+
+        function openCheckout(tierName) {
+            document.getElementById('modal-tier-name').innerText = tierName;
+            document.getElementById('checkout-tier').value = tierName;
+            document.getElementById('checkout-modal').style.display = 'flex';
+        }
+
+        function closeCheckout() {
+            document.getElementById('checkout-modal').style.display = 'none';
+        }
+
+      
+        function loadLiveTickets() {
+        
+
+            fetch('GetMyTicketsAPI')
+                .then(response => response.text())
+                .then(htmlData => {
+                    if (htmlData && htmlData.trim() !== "") {
+                        document.getElementById('myTicketsContainer').innerHTML = htmlData;
+                    } else {
+                        document.getElementById('myTicketsContainer').innerHTML = 
+                            "<div style='border: 1px dashed var(--border-light); padding: 24px; border-radius: 8px; text-align: center; width: 100%; color: var(--text-muted);'>Your purchased digital tickets will appear here.</div>";
+                    }
+                });
+
+            fetch('GetTicketUserAPI')
+                .then(response => {
+                    if (!response.ok) throw new Error("Server returned HTTP " + response.status);
+                    return response.text();
+                })
+                .then(htmlData => {
+                    if (htmlData && htmlData.trim() !== "") {
+                        document.getElementById('ticket-tiers-container').innerHTML = htmlData;
+                    } else {
+                        document.getElementById('ticket-tiers-container').innerHTML = "<p style='text-align:center; width:100%; color: var(--text-muted);'>No tickets configured for this event.</p>";
+                    }
+                })
+                .catch(err => {
+                    console.error("Fetch error:", err);
+                    document.getElementById('ticket-tiers-container').innerHTML = "<p style='text-align:center; width:100%; color: red;'>Could not connect to Java Server.</p>";
+                });
+
+            fetch('GetAgendaAPI?role=guest')
+                .then(response => {
+                    if (!response.ok) throw new Error("Timeline sync failed");
+                    return response.text();
+                })
+                .then(htmlFeed => {
+                    if (htmlFeed) {
+                        document.getElementById('agenda-feed-body').innerHTML = htmlFeed;
+                    }
+                })
+                .catch(err => {
+                    console.error("Timeline error:", err);
+                    document.getElementById('agenda-feed-body').innerHTML = 
+                        "<div style='text-align: center; padding: 16px; color: red;'>Unable to load timeline.</div>";
+                });
+                
+            fetch('GetDynamicPreferencesAPI')
+                .then(response => response.text())
+                .then(htmlForm => {
+                    if (htmlForm && htmlForm.trim() !== "") {
+                        document.getElementById('dynamic-preference-fields').innerHTML = htmlForm;
+                    }
+                });
+                
+            fetch('GetEventDetailsAPI')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.date) document.getElementById('event-date').innerText = data.date;
+                    if (data.time) document.getElementById('event-time').innerText = data.time;
+                    if (data.location) document.getElementById('event-location').innerText = data.location;
+                })
+                .catch(err => console.log("Error loading event details...", err));
+                
+            fetch('GetAnnouncementsAPI?role=guest')
+                .then(response => response.text())
+                .then(htmlFeed => {
+                    if(htmlFeed && htmlFeed.trim() !== "") {
+                        document.getElementById('announcement-feed-body').innerHTML = htmlFeed;
+                    }
+                })
+                .catch(err => console.log("Announcements loading error...", err));
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLiveTickets();
+        });
+        
+        document.getElementById('preferences-form').addEventListener('submit', function(e) {
+            let summary = "SUCCESS! The following data was recorded securely in the database:\n\n";
+            
+            const container = document.getElementById('dynamic-preference-fields');
+            const ticketBlocks = container.querySelectorAll("div[style*='background: #F8FAFC']");
+            
+            ticketBlocks.forEach(block => {
+                let passTitle = block.querySelector('h4').innerText;
+                summary += passTitle + "\n";
+                
+                let formGroups = block.querySelectorAll('.form-group');
+                formGroups.forEach(group => {
+                    let question = group.querySelector('label').innerText;
+                    let selectBox = group.querySelector('select');
+                    let answer = selectBox.options[selectBox.selectedIndex].text;
+                    
+                    summary += "   • " + question + ": " + answer + "\n";
+                });
+                summary += "\n"; 
+            });
+            
+            sessionStorage.setItem('detailedSaveMessage', summary);
+            let btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Saving to Database...";
+        });
+    </script>
+</body>
+</html>
